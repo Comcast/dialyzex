@@ -23,6 +23,7 @@ defmodule Dialyzex.Mixfile do
      start_permanent: Mix.env == :prod,
      deps: deps(),
      package: package(),
+     docs: docs(),
      dialyzer_ignored_warnings: [
        # Ignore the explicit exit for returning non-zero when dialyzer
        # returns warnings
@@ -54,6 +55,13 @@ defmodule Dialyzex.Mixfile do
       links: %{
         "Github" => "https://github.com/Comcast/dialyzex"
       }
+    ]
+  end
+
+  defp docs do
+    [
+      main: "README",
+      extras: ["README.md"]
     ]
   end
 end
