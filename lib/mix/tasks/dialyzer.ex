@@ -117,7 +117,6 @@ defmodule Mix.Tasks.Dialyzer do
     check: :boolean
   ]
 
-
   # This isn't ideal, but we need to exclude eqc and anything else
   # non-OTP from the PLT, so we can't use :code.lib_dir() directly.
   @erlang_core_apps ~w(
@@ -131,8 +130,7 @@ defmodule Mix.Tasks.Dialyzer do
 
   @elixir_core_apps [:eex, :elixir, :ex_unit, :iex, :logger, :mix]
 
-  @default_warnings [:unmatched_returns, :error_handling,
-                     :race_conditions, :underspecs, :unknown]
+  @default_warnings [:unmatched_returns, :error_handling, :race_conditions, :underspecs, :unknown]
 
   def run(args) do
     {opts, _, []} = OptionParser.parse(args, switches: @switches)
@@ -145,84 +143,97 @@ defmodule Mix.Tasks.Dialyzer do
     # Construct or verify existing PLTs
     check = Keyword.get(opts, :check, true)
 
-    _ = check_or_build(otp_plt_name(), &otp_app_paths/0, "Erlang/OTP", check)
-    _ = check_or_build(elixir_plt_name(), &elixir_paths/0, "Elixir", check)
-    _ = check_or_build(deps_plt_name(), &deps_paths/0, "dependencies", check)
+    _ = check_or_build(otp_plt_name(), &otp_app_paths/0, "Erlang/OTP", check, [])
+    _ = check_or_build(elixir_plt_name(), &elixir_paths/0, "Elixir", check, [otp_plt_name()])
+    _ = check_or_build(deps_plt_name(), &deps_paths/0, "dependencies", check, [elixir_plt_name()])
 
     # Run analysis
-    whitelist = Mix.Project.config
+    # Turns match_pattern into a match_spec that returns true
+    whitelist =
+      Mix.Project.config()
       |> Keyword.get(:dialyzer_ignored_warnings, [])
-      |> Enum.map(&({&1, [], [true]})) # Turns match_pattern into a match_spec that returns true
+      |> Enum.map(&{&1, [], [true]})
 
-    warnings = Mix.Project.config
-               |> Keyword.get(:dialyzer_warnings, @default_warnings)
+    warnings =
+      Mix.Project.config()
+      |> Keyword.get(:dialyzer_warnings, @default_warnings)
 
-    Mix.shell.info "Running analysis..."
-    analysis = dialyze(
-      analysis_type: :succ_typings,
-      plts: [otp_plt_name(), elixir_plt_name(), deps_plt_name()],
-      files_rec: apps_paths(),
-      warnings: warnings,
-      fail_on_warning: true,
-      whitelist: whitelist
-    )
+    Mix.shell().info("Running analysis...")
 
-    if Mix.debug? do
+    analysis =
+      dialyze(
+        analysis_type: :succ_typings,
+        plts: [otp_plt_name(), elixir_plt_name(), deps_plt_name()],
+        files_rec: apps_paths(),
+        warnings: warnings,
+        fail_on_warning: true,
+        whitelist: whitelist
+      )
+
+    if Mix.debug?() do
       {ignored, failed} = analysis
-      Mix.shell.info "IGNORED WARNINGS:"
-      Mix.shell.info inspect(ignored, pretty: true)
-      Mix.shell.info "FAILURES:"
-      Mix.shell.info inspect(failed, pretty: true)
+      Mix.shell().info("IGNORED WARNINGS:")
+      Mix.shell().info(inspect(ignored, pretty: true))
+      Mix.shell().info("FAILURES:")
+      Mix.shell().info(inspect(failed, pretty: true))
     end
 
     analysis
     |> format_results
-    |> Mix.shell.info
+    |> Mix.shell().info
   end
 
   defp format_results({[], []}) do
     [:green, "SUCCESS: No failures or warnings."]
   end
+
   defp format_results({ignored, []}) do
-    [:green, "SUCCESS: ",
-     :yellow, "#{length(ignored)} warnings."]
+    [:green, "SUCCESS: ", :yellow, "#{length(ignored)} warnings."]
   end
+
   defp format_results({[], failed}) do
     [:red, "FAILURE: #{length(failed)} failures."]
   end
+
   defp format_results({ignored, failed}) do
-    [:red, "FAILURE: #{length(failed)} failures, ",
-     :yellow, "#{length(ignored)} warnings."]
+    [:red, "FAILURE: #{length(failed)} failures, ", :yellow, "#{length(ignored)} warnings."]
   end
 
-  defp check_or_build(plt_file, paths, name, check) do
+  defp check_or_build(plt_file, paths, name, check, input_plts) do
     cond do
       File.exists?(plt_file) && check ->
         check_plt(plt_file, name)
+
       File.exists?(plt_file) ->
         {[], []}
+
       true ->
-        build_plt(plt_file, paths.(), name)
+        build_plt(plt_file, paths.(), name, input_plts)
     end
   end
 
-  defp build_plt(file, paths, name) do
-    Mix.shell.info "Building #{name} PLT: #{file}"
+  defp build_plt(file, paths, name, init_plts) do
+    Mix.shell().info("Building #{name} PLT: #{file}")
     :ok = :filelib.ensure_dir(file)
-    dialyze(analysis_type: :plt_build,
+
+    dialyze(
+      analysis_type: :plt_build,
       output_plt: file,
-      files_rec: paths)
+      plts: init_plts,
+      files_rec: paths
+    )
   end
 
   defp check_plt(file, name) do
-    Mix.shell.info "Checking #{name} PLT: #{file}"
+    Mix.shell().info("Checking #{name} PLT: #{file}")
     dialyze(analysis_type: :plt_check, init_plt: file)
   end
 
   defp dialyze(opts) do
     {report_opts, options} = Keyword.split(opts, [:fail_on_warning, :whitelist])
+
     try do
-      options |> :dialyzer.run |> report_warnings(report_opts)
+      options |> :dialyzer.run() |> report_warnings(report_opts)
     catch
       :throw, {:dialyzer_error, failure} ->
         Mix.raise(:erlang.iolist_to_binary(failure))
@@ -230,48 +241,58 @@ defmodule Mix.Tasks.Dialyzer do
   end
 
   defp otp_app_paths do
-    Enum.reduce(@erlang_core_apps, [],
-      fn app, paths ->
-        case :code.lib_dir(app) do
-          {:error, :bad_name} ->
-            Mix.shell.error("Could not find library directory for application #{inspect app}. It will not be included in the PLT.")
-            paths
-          dir ->
-            [dir|paths]
-        end
-      end)
+    Enum.reduce(@erlang_core_apps, [], fn app, paths ->
+      case :code.lib_dir(app) do
+        {:error, :bad_name} ->
+          Mix.shell().error(
+            "Could not find library directory for application #{inspect(app)}. It will not be included in the PLT."
+          )
+
+          paths
+
+        dir ->
+          [dir | paths]
+      end
+    end)
   end
 
   defp otp_plt_name do
-    cache_directory() |>
-      Path.join("erlang-#{System.otp_release}-erts-#{:erlang.system_info(:version)}.plt") |>
-      String.to_charlist
+    cache_directory()
+    |> Path.join("erlang-#{System.otp_release()}-erts-#{:erlang.system_info(:version)}.plt")
+    |> String.to_charlist()
   end
 
   defp elixir_plt_name do
-    cache_directory() |>
-      Path.join("elixir-#{System.version}.plt") |>
-      String.to_charlist
+    cache_directory()
+    |> Path.join(
+      "elixir-#{System.version()}-erlang-#{System.otp_release()}-erts-#{
+        :erlang.system_info(:version)
+      }.plt"
+    )
+    |> String.to_charlist()
   end
 
   defp elixir_paths do
-    @elixir_core_apps |>
-      Enum.map(&:code.lib_dir/1)
+    @elixir_core_apps
+    |> Enum.map(&:code.lib_dir/1)
   end
 
   defp deps_plt_name do
-    hash = Mix.Dep.Lock.read
-           |> :erlang.term_to_binary
-           |> :erlang.md5
-           |> Base.encode64(padding: false)
+    hash =
+      Mix.Dep.Lock.read()
+      |> :erlang.term_to_binary()
+      |> List.wrap()
+      |> Enum.concat([elixir_plt_name()])
+      |> :erlang.md5()
+      |> Base.url_encode64(padding: false)
 
-    Mix.Project.build_path |>
-      Path.join("deps-#{hash}.plt") |>
-      String.to_charlist
+    Mix.Project.build_path()
+    |> Path.join("deps-#{hash}.plt")
+    |> String.to_charlist()
   end
 
   defp deps_paths do
-    [env: Mix.env, include_children: true]
+    [env: Mix.env(), include_children: true]
     |> Mix.Dep.loaded()
     |> Enum.reject(fn dep -> dep.opts[:from_umbrella] end)
     |> Enum.flat_map(&Mix.Dep.load_paths/1)
@@ -279,28 +300,31 @@ defmodule Mix.Tasks.Dialyzer do
   end
 
   defp apps_paths do
-    paths = if Mix.Project.umbrella? do
-      Mix.Dep.cached
-      |> Enum.filter(fn dep -> dep.opts[:from_umbrella] end)
-      |> Enum.flat_map(&Mix.Dep.load_paths/1)
-    else
-      # TODO: Do we include consolidated protocols in the analysis? If
-      # so, we need to use the root build_path. However, this could
-      # trigger warnings about protocols from the Elixir stdlib. See
-      # also: https://github.com/elixir-lang/elixir/pull/5679
-      [Mix.Project.app_path]
-    end
+    paths =
+      if Mix.Project.umbrella?() do
+        Mix.Dep.cached()
+        |> Enum.filter(fn dep -> dep.opts[:from_umbrella] end)
+        |> Enum.flat_map(&Mix.Dep.load_paths/1)
+      else
+        # TODO: Do we include consolidated protocols in the analysis? If
+        # so, we need to use the root build_path. However, this could
+        # trigger warnings about protocols from the Elixir stdlib. See
+        # also: https://github.com/elixir-lang/elixir/pull/5679
+        [Mix.Project.app_path()]
+      end
+
     Enum.map(paths, &String.to_charlist/1)
   end
 
   defp report_warnings([], _report_opts) do
     []
   end
+
   defp report_warnings(warnings, report_opts) do
     fail_on_warning = Keyword.get(report_opts, :fail_on_warning, false)
     whitelist = Keyword.get(report_opts, :whitelist, [])
 
-    {ignored, failures} = Enum.partition(warnings, &warning_matches?(&1, whitelist))
+    {ignored, failures} = Enum.split_with(warnings, &warning_matches?(&1, whitelist))
 
     if fail_on_warning && failures != [] do
       # Exit non-zero when warnings exist
@@ -309,12 +333,12 @@ defmodule Mix.Tasks.Dialyzer do
 
     unless ignored == [] do
       warnings = Enum.map_join(ignored, "\n", &format_warning/1)
-      Mix.shell.info [:yellow, "Warnings:\n", warnings, "\n"]
+      Mix.shell().info([:yellow, "Warnings:\n", warnings, "\n"])
     end
 
     unless failures == [] do
       errors = Enum.map_join(failures, "\n", &format_warning/1)
-      Mix.shell.info [:red, "Errors:\n", errors, "\n"]
+      Mix.shell().info([:red, "Errors:\n", errors, "\n"])
     end
 
     {ignored, failures}
@@ -327,22 +351,22 @@ defmodule Mix.Tasks.Dialyzer do
   # The line number is irrelevant in these cases.
 
   defp format_warning({_tag, {_file, _line}, {:unknown_type, {m, f, a}}}) do
-    indent "Unknown type: #{m}:#{f}/#{a}"
+    indent("Unknown type: #{m}:#{f}/#{a}")
   end
 
   defp format_warning({_tag, {_file, _line}, {:unknown_function, {m, f, a}}}) do
-    indent "Unknown function: #{m}:#{f}/#{a}"
+    indent("Unknown function: #{m}:#{f}/#{a}")
   end
 
   defp format_warning({_tag, {_file, _line}, {:unknown_behaviour, b}}) do
-    indent "Unknown behaviour: #{b}"
+    indent("Unknown behaviour: #{b}")
   end
 
   defp format_warning(w) do
     w
     |> :dialyzer.format_warning(:fullpath)
     |> to_string
-    |> String.trim
+    |> String.trim()
     |> indent
   end
 
@@ -351,7 +375,7 @@ defmodule Mix.Tasks.Dialyzer do
   end
 
   defp cache_directory do
-    Path.join([System.user_home, ".cache", "dialyzer", "plts"])
+    Path.join([System.user_home(), ".cache", "dialyzer", "plts"])
   end
 
   defp warning_matches?(warning, pattern) do

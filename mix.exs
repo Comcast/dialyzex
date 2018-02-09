@@ -15,21 +15,22 @@ defmodule Dialyzex.Mixfile do
   use Mix.Project
 
   def project do
-    [app: :dialyzex,
-     description: description(),
-     version: "1.0.0",
-     elixir: "~> 1.5",
-     build_embedded: Mix.env == :prod,
-     start_permanent: Mix.env == :prod,
-     deps: deps(),
-     package: package(),
-     docs: docs(),
-     source_url: "https://github.com/Comcast/dialyzex",
-     dialyzer_ignored_warnings: [
-       # Ignore the explicit exit for returning non-zero when dialyzer
-       # returns warnings
-       {:warn_return_only_exit, {'lib/mix/tasks/dialyzer.ex', :_}, {:no_return, :_}}
-     ]
+    [
+      app: :dialyzex,
+      description: description(),
+      version: "1.0.0",
+      elixir: "~> 1.5",
+      build_embedded: Mix.env() == :prod,
+      start_permanent: Mix.env() == :prod,
+      deps: deps(),
+      package: package(),
+      docs: docs(),
+      source_url: "https://github.com/Comcast/dialyzex",
+      dialyzer_ignored_warnings: [
+        # Ignore the explicit exit for returning non-zero when dialyzer
+        # returns warnings
+        {:warn_return_only_exit, {'lib/mix/tasks/dialyzer.ex', :_}, {:no_return, :_}}
+      ]
     ]
   end
 
