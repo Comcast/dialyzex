@@ -23,7 +23,7 @@ defmodule Mix.Tasks.Dialyzer do
 
   ## PLT Creation
 
-  For efficiency, we construct multiple disjunct PLTs: one for Erlang
+  For efficiency, we construct multiple PLTs: one for Erlang
   and the runtime system (ERTS), one for Elixir, and one for the
   transitive dependencies of the project. The rationale here is that
   the Erlang installation, Elixir installation, and the dependencies
@@ -40,11 +40,11 @@ defmodule Mix.Tasks.Dialyzer do
 
   ```shell
   $ ls ~/.cache/dialyzer/plts/
-  elixir-1.4.2.plt    erlang-19-erts-8.2.2.plt
+  elixir-1.6.1-erlang-20-erts-9.2.plt	erlang-20-erts-9.2.plt
   ```
 
   The dependencies PLT is stored in the build directory of the current
-  `Mix.env`, e.g. `_build/dev/deps-31440056.plt`.
+  `Mix.env`, e.g. `_build/dev/deps-N0rJXDclQ8d-ibrpSc_emw.plt`.
 
   ## Warnings
 
