@@ -24,6 +24,7 @@ defmodule Dialyzex.Mixfile do
      deps: deps(),
      package: package(),
      docs: docs(),
+     source_url: "https://github.com/Comcast/dialyzex",
      dialyzer_ignored_warnings: [
        # Ignore the explicit exit for returning non-zero when dialyzer
        # returns warnings
