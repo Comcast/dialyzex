@@ -31,7 +31,7 @@ from [Hex](https://hex.pm). The package can be installed by adding
 ```elixir
   def deps do
     [
-      {:dialyzex, "~> 1.0.0", only: :dev}
+      {:dialyzex, "~> 1.1.0", only: :dev}
     ]
   end
 ```
