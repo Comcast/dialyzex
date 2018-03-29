@@ -317,7 +317,7 @@ defmodule Mix.Tasks.Dialyzer do
   end
 
   defp report_warnings([], _report_opts) do
-    []
+    {[], []}
   end
 
   defp report_warnings(warnings, report_opts) do
