@@ -132,6 +132,8 @@ defmodule Mix.Tasks.Dialyzer do
 
   @default_warnings [:unmatched_returns, :error_handling, :race_conditions, :underspecs, :unknown]
 
+  @inspect_opts [pretty: true, limit: :infinity]
+
   def run(args) do
     {opts, _, []} = OptionParser.parse(args, switches: @switches)
 
@@ -173,9 +175,9 @@ defmodule Mix.Tasks.Dialyzer do
     if Mix.debug?() do
       {ignored, failed} = analysis
       Mix.shell().info("IGNORED WARNINGS:")
-      Mix.shell().info(inspect(ignored, pretty: true))
+      Mix.shell().info(inspect(ignored, @inspect_opts))
       Mix.shell().info("FAILURES:")
-      Mix.shell().info(inspect(failed, pretty: true))
+      Mix.shell().info(inspect(failed, @inspect_opts))
     end
 
     analysis
