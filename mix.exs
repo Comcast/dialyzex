@@ -41,7 +41,7 @@ defmodule Dialyzex.Mixfile do
   defp deps do
     [
       {:ex_doc, "~> 0.17", only: :dev},
-      {:credo, "~> 0.8.1", only: :dev}
+      {:credo, "~> 0.9.3", only: :dev}
     ]
   end
 
