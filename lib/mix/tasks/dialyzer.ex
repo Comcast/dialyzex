@@ -145,9 +145,9 @@ defmodule Mix.Tasks.Dialyzer do
     # Construct or verify existing PLTs
     check = Keyword.get(opts, :check, true)
 
-    _ = check_or_build(otp_plt_name(), &otp_app_paths/0, "Erlang/OTP", check, [])
-    _ = check_or_build(elixir_plt_name(), &elixir_paths/0, "Elixir", check, [otp_plt_name()])
-    _ = check_or_build(deps_plt_name(), &deps_paths/0, "dependencies", check, [otp_plt_name(), elixir_plt_name()])
+    _ = check_or_build(otp_plt_name(), &otp_app_paths/0, "Erlang/OTP", check)
+    _ = check_or_build(elixir_plt_name(), &elixir_paths/0, "Elixir", check, otp_plt_name())
+    _ = check_or_build(deps_plt_name(), &deps_paths/0, "dependencies", check, elixir_plt_name())
 
     # Run analysis
     # Turns match_pattern into a match_spec that returns true
@@ -165,8 +165,8 @@ defmodule Mix.Tasks.Dialyzer do
     analysis =
       dialyze(
         analysis_type: :succ_typings,
-        plts: [otp_plt_name(), elixir_plt_name(), deps_plt_name()],
         files_rec: apps_paths(),
+        plts: [deps_plt_name()],
         warnings: warnings,
         fail_on_warning: true,
         whitelist: whitelist
@@ -201,7 +201,7 @@ defmodule Mix.Tasks.Dialyzer do
     [:red, "FAILURE: #{length(failed)} failures, ", :yellow, "#{length(ignored)} warnings."]
   end
 
-  defp check_or_build(plt_file, paths, name, check, input_plts) do
+  defp check_or_build(plt_file, paths, name, check, input_plt \\ nil) do
     cond do
       File.exists?(plt_file) && check ->
         check_plt(plt_file, name)
@@ -209,20 +209,35 @@ defmodule Mix.Tasks.Dialyzer do
       File.exists?(plt_file) ->
         {[], []}
 
+      input_plt == nil ->
+        build_plt(plt_file, paths.(), name)
+
       true ->
-        build_plt(plt_file, paths.(), name, input_plts)
+        add_to_plt(plt_file, paths.(), name, input_plt)
     end
   end
 
-  defp build_plt(file, paths, name, init_plts) do
+  defp build_plt(file, paths, name) do
     Mix.shell().info("Building #{name} PLT: #{file}")
     :ok = :filelib.ensure_dir(file)
 
     dialyze(
       analysis_type: :plt_build,
       output_plt: file,
-      plts: init_plts,
       files_rec: paths
+    )
+  end
+
+  defp add_to_plt(file, paths, name, input_plt) do
+    Mix.shell().info("Building #{name} PLT: #{file}")
+    :ok = :filelib.ensure_dir(file)
+
+    dialyze(
+      analysis_type: :plt_add,
+      output_plt: file,
+      files_rec: paths,
+      plts: [input_plt],
+      check_plt: false
     )
   end
 
