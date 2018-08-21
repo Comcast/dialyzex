@@ -147,7 +147,7 @@ defmodule Mix.Tasks.Dialyzer do
 
     _ = check_or_build(otp_plt_name(), &otp_app_paths/0, "Erlang/OTP", check, [])
     _ = check_or_build(elixir_plt_name(), &elixir_paths/0, "Elixir", check, [otp_plt_name()])
-    _ = check_or_build(deps_plt_name(), &deps_paths/0, "dependencies", check, [elixir_plt_name()])
+    _ = check_or_build(deps_plt_name(), &deps_paths/0, "dependencies", check, [otp_plt_name(), elixir_plt_name()])
 
     # Run analysis
     # Turns match_pattern into a match_spec that returns true
