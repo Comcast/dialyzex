@@ -165,8 +165,8 @@ defmodule Mix.Tasks.Dialyzer do
     analysis =
       dialyze(
         analysis_type: :succ_typings,
-        files_rec: apps_paths(),
         plts: [deps_plt_name()],
+        files: apps_files(),
         warnings: warnings,
         fail_on_warning: true,
         whitelist: whitelist
@@ -315,21 +315,33 @@ defmodule Mix.Tasks.Dialyzer do
     |> Enum.map(&String.to_charlist/1)
   end
 
-  defp apps_paths do
-    paths =
-      if Mix.Project.umbrella?() do
-        Mix.Dep.cached()
-        |> Enum.filter(fn dep -> dep.opts[:from_umbrella] end)
-        |> Enum.flat_map(&Mix.Dep.load_paths/1)
-      else
-        # TODO: Do we include consolidated protocols in the analysis? If
-        # so, we need to use the root build_path. However, this could
-        # trigger warnings about protocols from the Elixir stdlib. See
-        # also: https://github.com/elixir-lang/elixir/pull/5679
-        [Mix.Project.app_path()]
-      end
+  defp apps_files do
+    {protos_files, files} =
+      apps_paths()
+      |> Enum.flat_map(&Path.wildcard("#{&1}/**/*.beam"))
+      |> Enum.split_with(&(&1 =~ "/consolidated/"))
 
-    Enum.map(paths, &String.to_charlist/1)
+    protos =
+      protos_files
+      |> Enum.map(&Path.basename/1)
+      |> MapSet.new()
+
+    files_without_protos =
+      files
+      |> Enum.reject(&Enum.member?(protos, Path.basename(&1)))
+
+    (protos_files ++ files_without_protos)
+    |> Enum.map(&to_charlist/1)
+  end
+
+  defp apps_paths do
+    if Mix.Project.umbrella?() do
+      Mix.Dep.cached()
+      |> Enum.filter(fn dep -> dep.opts[:from_umbrella] end)
+      |> Enum.flat_map(&Mix.Dep.load_paths/1)
+    else
+      [Mix.Project.app_path()]
+    end
   end
 
   defp report_warnings([], _report_opts) do
