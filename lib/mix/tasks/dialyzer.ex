@@ -309,8 +309,7 @@ defmodule Mix.Tasks.Dialyzer do
   end
 
   defp deps_paths do
-    [env: Mix.env(), include_children: true]
-    |> Mix.Dep.loaded()
+    Mix.Dep.cached()
     |> Enum.reject(fn dep -> dep.opts[:from_umbrella] || dep.opts[:app] == false end)
     |> Enum.flat_map(&Mix.Dep.load_paths/1)
     |> Enum.map(&String.to_charlist/1)
