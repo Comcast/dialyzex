@@ -18,7 +18,7 @@ defmodule Dialyzex.Mixfile do
     [
       app: :dialyzex,
       description: description(),
-      version: "1.1.2",
+      version: "1.2.0",
       elixir: "~> 1.5",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
@@ -42,8 +42,8 @@ defmodule Dialyzex.Mixfile do
 
   defp deps do
     [
-      {:ex_doc, "~> 0.17", only: :dev},
-      {:credo, "~> 0.8.1", only: :dev}
+      {:ex_doc, "~> 0.18", only: :dev},
+      {:credo, "~> 0.10", only: :dev}
     ]
   end
 
