@@ -29,7 +29,9 @@ defmodule Dialyzex.Mixfile do
       dialyzer_ignored_warnings: [
         # Ignore the explicit exit for returning non-zero when dialyzer
         # returns warnings
-        {:warn_return_only_exit, {'lib/mix/tasks/dialyzer.ex', :_}, {:no_return, :_}}
+        {:warn_return_only_exit, {'lib/mix/tasks/dialyzer.ex', :_}, {:no_return, :_}},
+        {:warn_contract_supertype, :_, {:contract_supertype, [:_, :impl_for!, 1 | :_]}},
+        {:warn_contract_supertype, :_, {:contract_supertype, [:_, :impl_for, 1 | :_]}}
       ]
     ]
   end
