@@ -142,12 +142,14 @@ defmodule Mix.Tasks.Dialyzer do
       Mix.Project.compile(args)
     end
 
+    project_plt = deps_plt_name()
+
     # Construct or verify existing PLTs
     check = Keyword.get(opts, :check, true)
 
     _ = check_or_build(otp_plt_name(), &otp_app_paths/0, "Erlang/OTP", check)
     _ = check_or_build(elixir_plt_name(), &elixir_paths/0, "Elixir", check, otp_plt_name())
-    _ = check_or_build(deps_plt_name(), &deps_paths/0, "dependencies", check, elixir_plt_name())
+    _ = check_or_build(project_plt, &deps_paths/0, "dependencies", check, elixir_plt_name())
 
     # Run analysis
     # Turns match_pattern into a match_spec that returns true
@@ -165,7 +167,7 @@ defmodule Mix.Tasks.Dialyzer do
     analysis =
       dialyze(
         analysis_type: :succ_typings,
-        plts: [deps_plt_name()],
+        plts: [project_plt],
         files: apps_files(),
         warnings: warnings,
         fail_on_warning: true,
@@ -297,6 +299,8 @@ defmodule Mix.Tasks.Dialyzer do
   defp deps_plt_name do
     hash =
       Mix.Dep.Lock.read()
+      |> Enum.to_list()
+      |> Enum.sort()
       |> :erlang.term_to_binary()
       |> List.wrap()
       |> Enum.concat([elixir_plt_name()])
