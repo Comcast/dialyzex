@@ -134,6 +134,8 @@ defmodule Mix.Tasks.Dialyzer do
 
   @inspect_opts [pretty: true, limit: :infinity]
 
+  @doc false
+  @impl true
   def run(args) do
     {opts, _, []} = OptionParser.parse(args, switches: @switches)
 
@@ -275,13 +277,17 @@ defmodule Mix.Tasks.Dialyzer do
     end)
   end
 
-  defp otp_plt_name do
+  # NB: These are public so that the "clean" task can use them, later they
+  # should be in a module separate from the tasks.
+  @doc false
+  def otp_plt_name do
     cache_directory()
     |> Path.join("erlang-#{System.otp_release()}-erts-#{:erlang.system_info(:version)}.plt")
     |> String.to_charlist()
   end
 
-  defp elixir_plt_name do
+  @doc false
+  def elixir_plt_name do
     cache_directory()
     |> Path.join(
       "elixir-#{System.version()}-erlang-#{System.otp_release()}-erts-#{
