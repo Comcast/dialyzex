@@ -33,14 +33,38 @@ defmodule Mix.Tasks.Dialyzer do
   order to construct a PLT is expensive and should be done
   infrequently.
 
-  The Erlang and Elixir PLTs are stored in a hidden subdirectory of
-  the user's home directory, namely `~/.cache/dialyzer/plts`. The
+  By default, Erlang and Elixir PLTs are stored in a hidden subdirectory
+  of the user's home directory, namely `~/.cache/dialyzer/plts`. The
   contents of that directory after building PLTs might look like the
   below:
 
   ```shell
   $ ls ~/.cache/dialyzer/plts/
   elixir-1.6.1-erlang-20-erts-9.2.plt	erlang-20-erts-9.2.plt
+  ```
+
+  You can change where Erlang and Elixir PLTs are stored using
+  the `:dialyzer_cache_directory` config key in the Mix project
+  configuration. Setting the key to `nil` will make dialyzex use
+  the default directory, so you can easily configure it based
+  on the `Mix.env()`
+
+  ```elixir
+  def project do
+    [
+      ...
+      dialyzer_cache_directory: dialyzer_cache_directory(Mix.env()),
+      ...
+    ]
+  end
+
+  defp dialyzer_cache_directory(:ci) do
+    ".cache"
+  end
+
+  defp dialyzer_cache_directory(_) do
+    nil
+  end
   ```
 
   The dependencies PLT is stored in the build directory of the current
@@ -413,6 +437,11 @@ defmodule Mix.Tasks.Dialyzer do
   end
 
   defp cache_directory do
+    Mix.Project.config()
+    |> Keyword.get(:dialyzer_cache_directory) || default_cache_directory()
+  end
+
+  defp default_cache_directory do
     Path.join([System.user_home(), ".cache", "dialyzer", "plts"])
   end
 
