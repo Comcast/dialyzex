@@ -118,6 +118,18 @@ defmodule Mix.Tasks.Dialyzer do
   `:_` to match all patterns in that space. See OTP's documentation on
   match patterns and specs for more details.
 
+  ## Running analysis for specific files
+
+  You can limit the analysis to just specific files by specifying a `:dialyzer_analysed_files`
+  option under your project's mix config. It expects a function of type `(-> [String.t])`
+  that returns a list of `.beam` files to be analysed.
+
+  Please note that this option makes no assumptions about consolidated protocols,
+  so if you get warnings regarding missing implementations for protocols
+  you probably need to add that protocol's consolidated `.beam` file
+  (which is usually found under `_build/\#{env}/consolidated`)
+  to the list of analysed files.
+
   ## Options
 
   * `--check=(true|false)`: enable/disable checking of existing PLTs
@@ -188,13 +200,18 @@ defmodule Mix.Tasks.Dialyzer do
       Mix.Project.config()
       |> Keyword.get(:dialyzer_warnings, @default_warnings)
 
+    analysed_files = case Mix.Project.config() |> Keyword.get(:dialyzer_analysed_files) do
+      nil -> apps_files()
+      fun when is_function(fun) -> fun.() |> Enum.map(&to_charlist/1)
+    end
+
     Mix.shell().info("Running analysis...")
 
     analysis =
       dialyze(
         analysis_type: :succ_typings,
         plts: [project_plt],
-        files: apps_files(),
+        files: analysed_files,
         warnings: warnings,
         fail_on_warning: true,
         whitelist: whitelist
