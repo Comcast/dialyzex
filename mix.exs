@@ -37,13 +37,13 @@ defmodule Dialyzex.Mixfile do
   end
 
   def application do
-    [extra_applications: [:mix]]
+    [extra_applications: [:dialyzer, :mix]]
   end
 
   defp deps do
     [
-      {:ex_doc, "~> 0.18", only: :dev},
-      {:credo, "~> 0.10", only: :dev}
+      {:ex_doc, "~> 0.24", only: :dev},
+      {:credo, "~> 1.5", only: :dev}
     ]
   end
 
