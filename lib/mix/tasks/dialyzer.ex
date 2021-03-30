@@ -177,7 +177,7 @@ defmodule Mix.Tasks.Dialyzer do
 
     # Ensure project is compiled
     if Keyword.get(opts, :compile, true) do
-      Mix.Project.compile(args)
+      Mix.Task.run("compile", args)
     end
 
     project_plt = deps_plt_name()
