@@ -200,10 +200,11 @@ defmodule Mix.Tasks.Dialyzer do
       Mix.Project.config()
       |> Keyword.get(:dialyzer_warnings, @default_warnings)
 
-    analysed_files = case Mix.Project.config() |> Keyword.get(:dialyzer_analysed_files) do
-      nil -> apps_files()
-      fun when is_function(fun) -> fun.() |> Enum.map(&to_charlist/1)
-    end
+    analysed_files =
+      case Mix.Project.config() |> Keyword.get(:dialyzer_analysed_files) do
+        nil -> apps_files()
+        fun when is_function(fun) -> fun.() |> Enum.map(&to_charlist/1)
+      end
 
     Mix.shell().info("Running analysis...")
 
