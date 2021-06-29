@@ -155,7 +155,7 @@ defmodule Mix.Tasks.Dialyzer do
 
   # This isn't ideal, but we need to exclude eqc and anything else
   # non-OTP from the PLT, so we can't use :code.lib_dir() directly.
-  @erlang_core_apps ~w(
+  @otp_17_apps ~w(
     asn1 common_test compiler cosEvent cosEventDomain cosFileTransfer
     cosNotification cosProperty cosTime cosTransactions crypto
     debugger dialyzer diameter edoc eldap erl_docgen erl_interface
@@ -163,6 +163,36 @@ defmodule Mix.Tasks.Dialyzer do
     orber os_mon parsetools public_key reltool runtime_tools sasl snmp
     ssh ssl stdlib syntax_tools tools wx xmerl
   )a
+
+  @otp_19_apps @otp_17_apps -- ~w(ose test_server webtool)a
+
+  @otp_20_apps @otp_19_apps -- ~w(gs percept typer)a
+
+  @otp_21_apps @otp_20_apps
+               |> Kernel.--(
+                 ~w(cosEvent cosEventDomain cosFileTransfer cosNotification cosProperty cosTime cosTransactions ic orber)a
+               )
+               |> Kernel.++(~w(ftp tftp)a)
+
+  @otp_22_apps @otp_21_apps -- ~w(otp_mibs)a
+
+  @otp_24_apps @otp_22_apps -- ~w(hipe)a
+
+  @erlang_core_apps Map.fetch!(
+                      %{
+                        17 => @otp_17_apps,
+                        # Nothing added/removed in 18
+                        18 => @otp_17_apps,
+                        19 => @otp_19_apps,
+                        20 => @otp_20_apps,
+                        21 => @otp_21_apps,
+                        22 => @otp_22_apps,
+                        # Nothing added/removed in 23
+                        23 => @otp_22_apps,
+                        24 => @otp_24_apps
+                      },
+                      String.to_integer(System.otp_release())
+                    )
 
   @elixir_core_apps [:eex, :elixir, :ex_unit, :iex, :logger, :mix]
 
