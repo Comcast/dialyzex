@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: OTP ${{matrix.otp}} / Elixir ${{matrix.elixir}}
+    strategy:
+      matrix:
+        otp: ['21', '22', '23']
+        elixir: ['1.10', '1.11']
+        include:
+          - otp: '23'
+            elixir: '1.12'
+          - otp: '24'
+            elixir: '1.11'
+          - otp: '24'
+            elixir: '1.12'
+        exclude:
+          - otp: '23'
+            elixir: '1.10'
+    steps:
+      - uses: actions/checkout@v2
+      - uses: erlef/setup-beam@v1
+        id: setup-elixir
+        with:
+          otp-version: ${{matrix.otp}}
+          elixir-version: ${{matrix.elixir}}
+      - name: Cache deps and PLTs
+        uses: actions/cache@v2
+        with:
+          path: |
+            deps
+            _build/dev
+            ~/.cache/dialyzer/plts
+          key: ${{ steps.setup-elixir.outputs.otp-version }}-${{ steps.setup-elixir.outputs.elixir-version }}-deps-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+          restore-keys: |
+            ${{ steps.setup-elixir.outputs.otp-version }}-${{ steps.setup-elixir.outputs.elixir-version }}-deps-
+      - name: Fetch dependencies and compile
+        run: mix do deps.get, compile
+      - name: Run dialyzer
+        run: mix dialyzer
