@@ -1,6 +1,6 @@
 # dialyzex
 
-[![Build Status](https://travis-ci.org/Comcast/dialyzex.svg?branch=master)](https://travis-ci.org/Comcast/dialyzex)
+[![CI](https://github.com/Comcast/dialyzex/actions/workflows/ci.yml/badge.svg)](https://github.com/Comcast/dialyzex/actions/workflows/ci.yml)
 
 This project adds a `mix dialyzer` task to your project. In addition
 to simply automating dialyzer for Elixir projects, it provides some
